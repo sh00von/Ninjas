@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function Overview() {
   const buttons = [
-    { title: 'Impact', href: '/impact', description: 'Discover how climate change affects our world.' },
+    { title: 'Impact', href: '/sdg/impact/climate-action', description: 'Discover how climate change affects our world.' },
     { title: 'Cause', href: '/cause', description: 'Learn about the factors contributing to climate change.' },
     { title: 'Solution', href: '/solution', description: 'Explore ways to combat and mitigate climate change.' },
   ];

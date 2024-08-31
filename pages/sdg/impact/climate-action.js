@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 export default function Impact() {
   const impacts = [
-    { title: 'Sea Level Rise', description: 'Learn about the causes and impacts of rising sea levels.', href: '/sea-level-rise', img: '/sea.png' },
+    { title: 'Sea Level Rise', description: 'Learn about the causes and impacts of rising sea levels.', href: '/sdg/impact/climate-action/sea-level-rise', img: '/sea.png' },
     { title: 'Temperature Rise', description: 'Understand how global temperatures are increasing and its effects.', href: '/impact/temperature-rise', img: '/desert.png' },
     { title: 'Natural Disaster', description: 'Explore the connection between climate change and natural disasters.', href: '/impact/natural-disaster', img: '/forest.png' },
   ];

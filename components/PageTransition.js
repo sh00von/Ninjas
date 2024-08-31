@@ -1,13 +1,13 @@
-// components/PageTransition.js
+// Zoom in from the center during transition
 import { motion } from 'framer-motion';
 
 const PageTransition = ({ children }) => {
   return (
     <motion.div
       key={children.key}
-      initial={{ x: '100vw', opacity: 0 }} // Start off-screen to the right
-      animate={{ x: 0, opacity: 1 }} // Slide into view
-      exit={{ x: '-100vw', opacity: 20 }} // Slide out to the left
+      initial={{ scale: 0.5, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 1.5, opacity: 0 }}
       transition={{ type: 'tween', duration: 0.5 }}
     >
       {children}

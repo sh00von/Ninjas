@@ -14,7 +14,7 @@ export default function Home() {
         Are you ready to make a difference?
       </p>
 
-      <Link href="/level2">
+      <Link href="/choose-sdg">
         <button className="bg-green-600 hover:bg-green-700 text-white px-10 py-5 rounded-full text-2xl font-bold transition-colors animate-bounce">
           Get Started
         </button>
