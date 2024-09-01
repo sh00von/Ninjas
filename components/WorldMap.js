@@ -26,32 +26,36 @@ const WorldMap = () => {
 
   useEffect(() => {
     fetch("/world-110m.json")
-      .then(response => response.json())
-      .then(worlddata => {
-        setGeographies(feature(worlddata, worlddata.objects.countries).features);
+      .then((response) => response.json())
+      .then((worlddata) => {
+        setGeographies(
+          feature(worlddata, worlddata.objects.countries).features
+        );
       })
-      .catch(error => console.error("Error fetching world data:", error));
+      .catch((error) => console.error("Error fetching world data:", error));
 
     fetch("/latlong.json")
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         const coords = {};
-        data.ref_country_codes.forEach(country => {
+        data.ref_country_codes.forEach((country) => {
           coords[country.country] = [country.longitude, country.latitude];
         });
         setCountryCoords(coords);
       })
-      .catch(error => console.error("Error fetching coordinates data:", error));
+      .catch((error) =>
+        console.error("Error fetching coordinates data:", error)
+      );
 
     csv("/data.csv")
-      .then(data => {
+      .then((data) => {
         const ghg = {};
-        data.forEach(row => {
+        data.forEach((row) => {
           ghg[row.Country] = parseFloat(row["2022"]);
         });
         setGhgData(ghg);
       })
-      .catch(error => console.error("Error fetching GHG data:", error));
+      .catch((error) => console.error("Error fetching GHG data:", error));
 
     const svg = select(svgRef.current);
     const zoom = d3Zoom()
@@ -70,7 +74,7 @@ const WorldMap = () => {
 
   useEffect(() => {
     if (searchTerm) {
-      const filteredSuggestions = Object.keys(countryCoords).filter(country =>
+      const filteredSuggestions = Object.keys(countryCoords).filter((country) =>
         country.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setSuggestions(filteredSuggestions);
@@ -83,7 +87,9 @@ const WorldMap = () => {
     if (comparisonMode) {
       // Toggle country selection for comparison mode
       if (selectedCountries.includes(countryName)) {
-        setSelectedCountries(selectedCountries.filter(country => country !== countryName));
+        setSelectedCountries(
+          selectedCountries.filter((country) => country !== countryName)
+        );
       } else {
         setSelectedCountries([...selectedCountries, countryName]);
       }
@@ -91,7 +97,7 @@ const WorldMap = () => {
     } else {
       // Default behavior: zoom to country and show single data
       setSelectedCountry(countryName);
-      setSelectedCountries([]);
+      setSelectedCountries([countryName]); // Only keep the single selected country
       showZoomToCountry(countryName);
     }
   };
@@ -111,12 +117,15 @@ const WorldMap = () => {
       const svg = select(svgRef.current);
       const zoom = zoomRef.current;
 
-      svg.transition().duration(750).call(
-        zoom.transform,
-        zoomIdentity
-          .translate(window.innerWidth / 2 - x * 4, window.innerHeight / 2 - y * 4)
-          .scale(4)
-      );
+      svg
+        .transition()
+        .duration(750)
+        .call(
+          zoom.transform,
+          zoomIdentity
+            .translate(window.innerWidth / 2 - x * 4, window.innerHeight / 2 - y * 4)
+            .scale(4)
+        );
     } else {
       console.error(`Coordinates for ${countryName} are not available.`);
     }
@@ -134,26 +143,35 @@ const WorldMap = () => {
     svg.transition().duration(750).call(zoom.scaleBy, 0.8);
   };
 
-  const dataForChart = selectedCountries.map(country => ({
+  const dataForChart = selectedCountries.map((country) => ({
     name: country,
     GHG: ghgData[country] || 0,
   }));
 
-  const singleCountryData = selectedCountry ? [{
-    name: selectedCountry,
-    GHG: ghgData[selectedCountry] || 0,
-  }] : [];
+  const singleCountryData = selectedCountry
+    ? [
+        {
+          name: selectedCountry,
+          GHG: ghgData[selectedCountry] || 0,
+        },
+      ]
+    : [];
 
   return (
     <div className="relative w-full h-screen flex flex-col">
       <div className="relative h-16 flex items-center justify-center bg-white shadow-md">
         <h1 className="text-xl font-bold">GHG Emission 2022</h1>
-     
       </div>
-      <div className="relative flex-grow">   
-      <div className="absolute left-4 bottom-16 flex space-x-2 items-center">
+      <div className="relative flex-grow">
+        <div className="absolute left-4 bottom-16 flex space-x-2 items-center">
           <button
-            onClick={() => setComparisonMode(!comparisonMode)}
+            onClick={() => {
+              if (comparisonMode) {
+                setSelectedCountries([]);
+                setSelectedCountry("");
+              }
+              setComparisonMode(!comparisonMode);
+            }}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors"
           >
             {comparisonMode ? "Disable Comparison" : "Enable Comparison"}
@@ -214,11 +232,15 @@ const WorldMap = () => {
               <path
                 key={`path-${i}`}
                 d={geoPath().projection(projection)(d)}
-                fill={selectedCountries.includes(d.properties.name) ? "#FFEB3B" : "#B0BEC5"} // Highlight selected countries
+                fill={
+                  selectedCountries.includes(d.properties.name)
+                    ? "#FFEB3B"
+                    : "#B0BEC5"
+                } // Highlight selected countries
                 stroke="#000"
                 strokeWidth={0.5}
                 onClick={() => handleCountryClick(d.properties.name)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               />
             ))}
           </g>
@@ -229,17 +251,20 @@ const WorldMap = () => {
                 cx={projection(coords)[0]}
                 cy={projection(coords)[1]}
                 r={selectedCountries.includes(country) ? 8 : 5}
-                fill={selectedCountries.includes(country) ? "#FFEB3B" : "#E91E63"}
-                stroke="#FFFFFF"
-                className="marker"
+                fill={
+                  selectedCountries.includes(country) ? "#FF5722" : "#00BCD4"
+                } // Highlight selected countries
+                stroke="#FFF"
+                strokeWidth={1}
+                style={{ cursor: "pointer" }}
                 onClick={() => handleCountryClick(country)}
-                style={{ cursor: 'pointer' }}
               />
             ))}
           </g>
         </svg>
-        {!comparisonMode && selectedCountry && singleCountryData.length > 0 && (
-          <div className="absolute top-4 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
+      </div>
+      {!comparisonMode && selectedCountry && singleCountryData.length > 0 && (
+          <div className="absolute top-16 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
             <h3 className="text-lg font-semibold">Single Country Data</h3>
             <p className="mt-2 text-sm">Country: {singleCountryData[0].name}</p>
             <p className="text-sm">GHG Emission: {singleCountryData[0].GHG} tons</p>
@@ -258,11 +283,10 @@ const WorldMap = () => {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="GHG" fill="#8884d8" />
+              <Bar dataKey="GHG" fill="#da702f" />
             </BarChart>
           </div>
         )}
-      </div>
     </div>
   );
 };
