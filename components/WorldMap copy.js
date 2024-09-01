@@ -16,7 +16,6 @@ const WorldMap = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [year, setYear] = useState(2022);
 
   const svgRef = useRef(null);
   const zoomRef = useRef(null);
@@ -48,20 +47,15 @@ const WorldMap = () => {
         console.error("Error fetching coordinates data:", error)
       );
 
-    // Parse CSV data correctly
-    csv("/totalghg.csv").then((data) => {
-      const ghg = {};
-      data.forEach((row) => {
-        const country = row.Country;
-        ghg[country] = {};
-        Object.keys(row).forEach((key) => {
-          if (key !== "Country") {
-            ghg[country][key] = parseFloat(row[key]) || 0; // Parse float and handle NaN
-          }
+    csv("/data.csv")
+      .then((data) => {
+        const ghg = {};
+        data.forEach((row) => {
+          ghg[row.Country] = parseFloat(row["2022"]);
         });
-      });
-      setGhgData(ghg);
-    }).catch((error) => console.error("Error fetching GHG data:", error));
+        setGhgData(ghg);
+      })
+      .catch((error) => console.error("Error fetching GHG data:", error));
 
     const svg = select(svgRef.current);
     const zoom = d3Zoom()
@@ -91,6 +85,7 @@ const WorldMap = () => {
 
   const handleCountryClick = (countryName) => {
     if (comparisonMode) {
+      // Toggle country selection for comparison mode
       if (selectedCountries.includes(countryName)) {
         setSelectedCountries(
           selectedCountries.filter((country) => country !== countryName)
@@ -98,10 +93,11 @@ const WorldMap = () => {
       } else {
         setSelectedCountries([...selectedCountries, countryName]);
       }
-      setSelectedCountry("");
+      setSelectedCountry(""); // Clear single selection if in comparison mode
     } else {
+      // Default behavior: zoom to country and show single data
       setSelectedCountry(countryName);
-      setSelectedCountries([countryName]);
+      setSelectedCountries([countryName]); // Only keep the single selected country
       showZoomToCountry(countryName);
     }
   };
@@ -138,37 +134,33 @@ const WorldMap = () => {
   const zoomIn = () => {
     const svg = select(svgRef.current);
     const zoom = zoomRef.current;
-    svg.transition().duration(750).call(zoom.scaleBy, 1.4);
+    svg.transition().duration(750).call(zoom.scaleBy, 1.2);
   };
 
   const zoomOut = () => {
     const svg = select(svgRef.current);
     const zoom = zoomRef.current;
-    svg.transition().duration(750).call(zoom.scaleBy, 0.6);
+    svg.transition().duration(750).call(zoom.scaleBy, 0.8);
   };
 
   const dataForChart = selectedCountries.map((country) => ({
     name: country,
-    GHG: ghgData[country] ? ghgData[country][year] || 0 : 0,
+    GHG: ghgData[country] || 0,
   }));
 
   const singleCountryData = selectedCountry
     ? [
         {
           name: selectedCountry,
-          GHG: ghgData[selectedCountry] ? ghgData[selectedCountry][year] || 0 : 0,
+          GHG: ghgData[selectedCountry] || 0,
         },
       ]
     : [];
 
-  const handleYearChange = (event) => {
-    setYear(Number(event.target.value));
-  };
-
   return (
-    <div className="relative w-full h-screen flex flex-col bg-gray-100">
+    <div className="relative w-full h-screen flex flex-col">
       <div className="relative sticky top-0 h-16 flex items-center justify-center bg-white shadow-md">
-        <h1 className="text-xl font-bold">GHG Emission Data ({year})</h1>
+        <h1 className="text-xl font-bold ">GHG Emission 2022</h1>
       </div>
       <div className="relative flex-grow">
         <div className="absolute left-4 bottom-16 flex space-x-2 items-center">
@@ -227,56 +219,38 @@ const WorldMap = () => {
             </ul>
           )}
         </div>
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-64">
-  <input
-    type="range"
-    min={1970}
-    max={2022}
-    value={year}
-    onChange={handleYearChange}
-    className="w-full h-4 appearance-none cursor-pointer"
-    style={{
-      background: `linear-gradient(to right, rgba(255, 205, 205, 0.5) 0%, rgba(255, 0, 0, 0.8) 100%)`
-    }}
-  />
-  <div className="flex justify-between text-sm mt-1">
-    <span>1970</span>
-    <span>{year}</span>
-    <span>2022</span>
-  </div>
-</div>
-
-        <svg ref={svgRef} width="100%" height="100%">
+        <svg
+          ref={svgRef}
+          className="w-full h-full"
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
           <g className="countries">
-            {geographies.map((geo, i) => {
-              const countryName = geo.properties.name;
-              const dataValue = ghgData[countryName] ? ghgData[countryName][year] || 0 : 0;
-              const colorIntensity = dataValue > 0 ? `rgb(${255 - Math.min(dataValue * 2, 255)}, 0, ${Math.min(dataValue * 2, 255)})` : "#ddd";
-
-              return (
-                <path
-                  key={i}
-                  d={geoPath().projection(projection)(geo)}
-                  fill={colorIntensity}
-                  stroke="#333"
-                  strokeWidth={0.5}
-                  onClick={() => handleCountryClick(countryName)}
-                />
-              );
-            })}
+            {geographies.map((d, i) => (
+              <path
+                key={`path-${i}`}
+                d={geoPath().projection(projection)(d)}
+                fill={
+                  selectedCountries.includes(d.properties.name)
+                    ? "#FFEB3B"
+                    : "#B0BEC5"
+                } // Highlight selected countries
+                stroke="#000"
+                strokeWidth={0.5}
+                onClick={() => handleCountryClick(d.properties.name)}
+                style={{ cursor: "pointer" }}
+              />
+            ))}
           </g>
           <g className="markers">
-            {Object.keys(countryCoords).map((country, index) => {
-              const coords = countryCoords[country];
-              if (coords) {
-                const [longitude, latitude] = coords;
-                const [x, y] = projection([longitude, latitude]);
-                return (
-                      <circle
-                key={index}
-                cx={x}
-                cy={y}
-                r={selectedCountries.includes(country) ? 5 : 3}
+            {Object.entries(countryCoords).map(([country, coords], i) => (
+              <circle
+                key={`marker-${i}`}
+                cx={projection(coords)[0]}
+                cy={projection(coords)[1]}
+                r={selectedCountries.includes(country) ? 8 : 5}
                 fill={
                   selectedCountries.includes(country) ? "#FF5722" : "#00BCD4"
                 } // Highlight selected countries
@@ -285,16 +259,21 @@ const WorldMap = () => {
                 style={{ cursor: "pointer" }}
                 onClick={() => handleCountryClick(country)}
               />
-                );
-              }
-              return null;
-            })}
+            ))}
           </g>
         </svg>
       </div>
-      <div className="absolute bottom-8 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
-        {comparisonMode && selectedCountries.length > 1 ? (
-           <BarChart
+      {!comparisonMode && selectedCountry && singleCountryData.length > 0 && (
+          <div className="absolute top-16 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold">Single Country Data</h3>
+            <p className="mt-2 text-sm">Country: {singleCountryData[0].name}</p>
+            <p className="text-sm">GHG Emission: {singleCountryData[0].GHG} tons</p>
+          </div>
+        )}
+        {comparisonMode && selectedCountries.length > 0 && (
+          <div className="absolute bottom-8 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold">Comparison Chart</h3>
+            <BarChart
               width={400}
               height={200}
               data={dataForChart}
@@ -306,15 +285,8 @@ const WorldMap = () => {
               <Tooltip />
               <Bar dataKey="GHG" fill="#da702f" />
             </BarChart>
-        ) : selectedCountry ? (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold">{selectedCountry}</h2>
-            <p className="mt-2 text-lg">GHG Emissions: {singleCountryData[0]?.GHG || 0}</p>
           </div>
-        ) : (
-          <p className="text-center text-gray-600">Select a country to view details</p>
         )}
-      </div>
     </div>
   );
 };
