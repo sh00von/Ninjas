@@ -3,14 +3,17 @@ import { geoEqualEarth, geoPath } from "d3-geo";
 import { zoom as d3Zoom, zoomIdentity } from "d3-zoom";
 import { select } from "d3-selection";
 import { feature } from "topojson-client";
-import { csv } from "d3-fetch"; // Import d3-fetch for CSV handling
-import { FaPlus, FaMinus } from "react-icons/fa"; // Import icons for zoom controls
+import { csv } from "d3-fetch";
+import { FaPlus, FaMinus, FaChartBar } from "react-icons/fa";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const WorldMap = () => {
   const [geographies, setGeographies] = useState([]);
   const [countryCoords, setCountryCoords] = useState({});
   const [ghgData, setGhgData] = useState({});
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedCountries, setSelectedCountries] = useState([]);
+  const [comparisonMode, setComparisonMode] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -77,8 +80,20 @@ const WorldMap = () => {
   }, [searchTerm]);
 
   const handleCountryClick = (countryName) => {
-    setSelectedCountry(countryName);
-    showZoomToCountry(countryName);
+    if (comparisonMode) {
+      // Toggle country selection for comparison mode
+      if (selectedCountries.includes(countryName)) {
+        setSelectedCountries(selectedCountries.filter(country => country !== countryName));
+      } else {
+        setSelectedCountries([...selectedCountries, countryName]);
+      }
+      setSelectedCountry(""); // Clear single selection if in comparison mode
+    } else {
+      // Default behavior: zoom to country and show single data
+      setSelectedCountry(countryName);
+      setSelectedCountries([]);
+      showZoomToCountry(countryName);
+    }
   };
 
   const handleSuggestionClick = (country) => {
@@ -119,32 +134,73 @@ const WorldMap = () => {
     svg.transition().duration(750).call(zoom.scaleBy, 0.8);
   };
 
+  const dataForChart = selectedCountries.map(country => ({
+    name: country,
+    GHG: ghgData[country] || 0,
+  }));
+
+  const singleCountryData = selectedCountry ? [{
+    name: selectedCountry,
+    GHG: ghgData[selectedCountry] || 0,
+  }] : [];
+
   return (
     <div className="relative w-full h-screen flex flex-col">
       <div className="relative h-16 flex items-center justify-center bg-white shadow-md">
         <h1 className="text-xl font-bold">GHG Emission 2022</h1>
+     
       </div>
-      <div className="relative flex-grow">
-        <input
-          type="text"
-          placeholder="Search for a country..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="absolute top-4 left-4 p-2 border border-gray-300 rounded"
-        />
-        {suggestions.length > 0 && (
-          <ul className="absolute top-12 left-4 bg-white border border-gray-300 rounded-md shadow-md max-h-40 overflow-y-auto z-10">
-            {suggestions.map((country, index) => (
-              <li
-                key={`suggestion-${index}`}
-                className="p-2 hover:bg-gray-200 cursor-pointer"
-                onClick={() => handleSuggestionClick(country)}
-              >
-                {country}
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="relative flex-grow">   
+      <div className="absolute left-4 bottom-16 flex space-x-2 items-center">
+          <button
+            onClick={() => setComparisonMode(!comparisonMode)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors"
+          >
+            {comparisonMode ? "Disable Comparison" : "Enable Comparison"}
+          </button>
+          <button
+            onClick={zoomIn}
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg shadow-md hover:bg-gray-700 transition-colors"
+          >
+            <FaPlus />
+          </button>
+          <button
+            onClick={zoomOut}
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg shadow-md hover:bg-gray-700 transition-colors"
+          >
+            <FaMinus />
+          </button>
+          {comparisonMode && selectedCountries.length > 0 && (
+            <button
+              onClick={() => setComparisonMode(false)}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-colors"
+            >
+              <FaChartBar />
+            </button>
+          )}
+        </div>
+        <div className="absolute top-4 left-4 w-64">
+          <input
+            type="text"
+            placeholder="Search for a country..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {suggestions.length > 0 && (
+            <ul className="mt-2 bg-white border border-gray-300 rounded-lg shadow-md max-h-40 overflow-y-auto z-10 absolute w-full">
+              {suggestions.map((country, index) => (
+                <li
+                  key={`suggestion-${index}`}
+                  className="p-3 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleSuggestionClick(country)}
+                >
+                  {country}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <svg
           ref={svgRef}
           className="w-full h-full"
@@ -158,7 +214,7 @@ const WorldMap = () => {
               <path
                 key={`path-${i}`}
                 d={geoPath().projection(projection)(d)}
-                fill="#B0BEC5" // Default color for countries
+                fill={selectedCountries.includes(d.properties.name) ? "#FFEB3B" : "#B0BEC5"} // Highlight selected countries
                 stroke="#000"
                 strokeWidth={0.5}
                 onClick={() => handleCountryClick(d.properties.name)}
@@ -172,8 +228,8 @@ const WorldMap = () => {
                 key={`marker-${i}`}
                 cx={projection(coords)[0]}
                 cy={projection(coords)[1]}
-                r={5}
-                fill={country === selectedCountry ? "#208ac2" : "#E91E63"}
+                r={selectedCountries.includes(country) ? 8 : 5}
+                fill={selectedCountries.includes(country) ? "#FFEB3B" : "#E91E63"}
                 stroke="#FFFFFF"
                 className="marker"
                 onClick={() => handleCountryClick(country)}
@@ -182,21 +238,30 @@ const WorldMap = () => {
             ))}
           </g>
         </svg>
-        {selectedCountry && (
-          <div className="absolute top-4 right-4 bg-white p-4 border border-gray-300 rounded-md shadow-md">
-            <h3 className="text-lg font-semibold">{selectedCountry}</h3>
-            <p>GHG Emission: {ghgData[selectedCountry] || "No data"} GHG</p>
-            <p>Coordinates: {countryCoords[selectedCountry]?.join(", ") || "No data"}</p>
+        {!comparisonMode && selectedCountry && singleCountryData.length > 0 && (
+          <div className="absolute top-4 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold">Single Country Data</h3>
+            <p className="mt-2 text-sm">Country: {singleCountryData[0].name}</p>
+            <p className="text-sm">GHG Emission: {singleCountryData[0].GHG} tons</p>
           </div>
         )}
-        <div className="absolute bottom-16 right-4 flex flex-col space-y-2">
-          <button onClick={zoomIn} className="p-2 bg-gray-200 rounded">
-            <FaPlus />
-          </button>
-          <button onClick={zoomOut} className="p-2 bg-gray-200 rounded">
-            <FaMinus />
-          </button>
-        </div>
+        {comparisonMode && selectedCountries.length > 0 && (
+          <div className="absolute bottom-8 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold">Comparison Chart</h3>
+            <BarChart
+              width={400}
+              height={200}
+              data={dataForChart}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="GHG" fill="#8884d8" />
+            </BarChart>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -27,6 +27,7 @@
     "react-leaflet": "^4.2.1",
     "react-map-gl": "^7.1.7",
     "react-simple-maps": "^3.0.0",
+    "recharts": "^2.12.7",
     "three": "^0.168.0",
     "three-globe": "^2.31.1"
   },
