@@ -266,30 +266,57 @@ const WorldMap = () => {
             })}
           </g>
           <g className="markers">
-            {Object.keys(countryCoords).map((country, index) => {
-              const coords = countryCoords[country];
-              if (coords) {
-                const [longitude, latitude] = coords;
-                const [x, y] = projection([longitude, latitude]);
-                return (
-                      <circle
-                key={index}
-                cx={x}
-                cy={y}
-                r={selectedCountries.includes(country) ? 5 : 3}
-                fill={
-                  selectedCountries.includes(country) ? "#FF5722" : "#00BCD4"
-                } // Highlight selected countries
-                stroke="#FFF"
-                strokeWidth={1}
-                style={{ cursor: "pointer" }}
-                onClick={() => handleCountryClick(country)}
-              />
-                );
-              }
-              return null;
-            })}
-          </g>
+  {Object.keys(countryCoords).map((country, index) => {
+    const coords = countryCoords[country];
+    
+    if (coords) {
+      const [longitude, latitude] = coords;
+      const [x, y] = projection([longitude, latitude]);
+
+      // Get the GHG value for the current country and year
+      const ghgValue = ghgData[country]?.[year] || 0;
+
+      // Define colors for different emission categories
+      let fillColor;
+      if (ghgValue > 500) {
+        // Extreme Emission: Dark Red
+        fillColor = '#660000';
+      } else if (ghgValue > 100) {
+        // Very High Emission: Red
+        fillColor = '#cc0000';
+      } else if (ghgValue > 50) {
+        // High Emission: Orange
+        fillColor = '#ff6600';
+      } else if (ghgValue > 10) {
+        // Moderate Emission: Yellow
+        fillColor = '#ffff00';
+      } else {
+        // Low Emission: Light Green
+        fillColor = '#99ff99';
+      }
+
+      // Determine the radius of the circle based on whether the country is selected
+      const radius = selectedCountries.includes(country) ? 5 : 3;
+
+      return (
+        <circle
+          key={index}
+          cx={x}
+          cy={y}
+          r={radius}
+          fill={fillColor}
+          stroke="#FFF"
+          strokeWidth={1}
+          style={{ cursor: "pointer" }}
+          onClick={() => handleCountryClick(country)}
+        />
+      );
+    }
+
+    return null;
+  })}
+</g>
+
         </svg>
       </div>
       <div className="absolute bottom-8 right-4 w-1/3 bg-white p-4 border border-gray-300 rounded-md shadow-md">
