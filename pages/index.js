@@ -7,7 +7,7 @@ export default function Home() {
       style={{ backgroundImage: "url('/home-bg.png')" }}
     >
       <h1 className="text-7xl font-bold mb-4 animate-fadeIn" style={{ fontFamily: 'Bokcero, sans-serif', color: 'white' }}>
-        Oi GHG nah Pleasee 
+        CLIMATE NINJAS
       </h1>
       
       <p className="text-xl text-white mb-12 animate-fadeIn">

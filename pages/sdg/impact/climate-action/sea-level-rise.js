@@ -32,7 +32,7 @@ export default function SeaLevelRise() {
           {step === 0 && (
             <div className={`${styles.stepContent} ${styles.enter} animate-fadeIn`}>
               <Image
-                src="/sea-bg.png"
+                src="/pexels-jeremy-bishop-1260133-2422913.jpg"
                 alt="Sea Level Rise Impact"
                 width={800}
                 height={450}
@@ -84,9 +84,9 @@ export default function SeaLevelRise() {
                 Addressing sea level rise requires global cooperation, including reducing greenhouse gas emissions, protecting coastal ecosystems, and planning for the relocation of affected populations.
               </p>
               <div className="flex justify-between items-center">
-                <Link href="/impact">
+                <Link href="/sdg/impact/climate-action">
                   <div className="text-[#0288D1] hover:text-[#01579B] font-semibold text-lg cursor-pointer animate-slideInLeft">
-                    ← Back to Impact Overview
+                    ← Back
                   </div>
                 </Link>
                 <Link href="/impact/temperature-rise">
